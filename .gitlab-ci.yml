@@ -10,7 +10,7 @@ lint:
     - npm run lint
 
 trigger-infra-docker:
-  stage: trigger-infra
+  stage: deploy
   trigger:
     project: I545577/flash-cards-infra
     branch: main
