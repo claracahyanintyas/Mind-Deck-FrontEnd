@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AuthService from '../services/AuthService';
-import api, { setLogoutHandler } from '../api';
+import api, { setLogoutHandler } from '../Api';
 
 export const AuthContext = createContext();
 

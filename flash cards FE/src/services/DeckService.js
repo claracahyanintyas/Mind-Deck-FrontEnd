@@ -1,4 +1,4 @@
-import api from '../api';
+import api from '../Api';
 
 const REST_API_BASE_URL = `/decks`
 
