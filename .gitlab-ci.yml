@@ -6,6 +6,7 @@ stages:
 build:
   stage: build
   script:
+    - cd "flash cards FE"
     - npm install
     - npm run build
 
