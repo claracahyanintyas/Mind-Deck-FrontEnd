@@ -5,6 +5,7 @@ stages:
 lint:
   stage: lint
   script:
+    - cd "flash cards FE"
     - npm ci
     - npm run lint
 
