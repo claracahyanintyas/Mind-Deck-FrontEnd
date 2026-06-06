@@ -3,13 +3,22 @@ stages:
   - package
   - deploy
 
-build:
+frontend-build:
   stage: build
   script:
     - cd "flash cards FE"
-    - npm install
+    # 1. Manually inject the production variable into a local .env file so Vite reads it during compilation
+    - echo "VITE_API_BASE_URL=http://<YOUR_VM_PUBLIC_IP>:8080" > .env
+    
+    # 2. Now install and compile (Vite will bake the correct VM URL straight into the JS bundle)
+    - npm ci
     - npm run build
-
+    
+    # 3. Build and push the freshly baked image
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker build -t claracahyanintyas/flashcards-frontend:latest .
+    - docker push claracahyanintyas/flashcards-frontend:latest
+    
 package:
   stage: package
   script:
