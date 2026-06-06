@@ -1,13 +1,25 @@
 stages:
-  - lint
+  - build
+  - package
   - deploy
 
-lint:
-  stage: lint
+build:
+  stage: build
   script:
+    - npm install
+    - npm run build
+
+package:
+  stage: package
+  script:
+    - sudo chmod 666 /var/run/docker.sock
+    - echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
     - cd "flash cards FE"
-    - npm ci
-    - npm run lint
+    - docker build -t claracahyanintyas/flashcards-frontend:latest .
+    - docker push claracahyanintyas/flashcards-frontend:latest
+  only:
+    - main
+
 
 trigger-infra-docker:
   stage: deploy
