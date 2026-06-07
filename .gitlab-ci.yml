@@ -22,7 +22,7 @@ package:
     - echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
     - cd "flash cards FE"
     # GitLab automatically downloads the 'dist/' folder here
-    - docker build --no-cache -t claracahyanintyas/flashcards-frontend:latest .
+    - docker build --no-cache --build-arg VITE_API_BASE_URL="http://145.220.72.104:8080/api" -t claracahyanintyas/flashcards-frontend:latest .
     - docker push claracahyanintyas/flashcards-frontend:latest
   only:
     - main
