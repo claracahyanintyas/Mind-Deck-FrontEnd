@@ -19,11 +19,18 @@ function RegisterForm() {
             toast.success("Successfully registered")
             navigate('/login');
         } catch (error) {
-            if (error.response && error.response.status === 400) {
-                toast.error(error.response.data.message); 
-            } else {
-                toast.error("Something went wrong");
-            }
+        if (error.response?.data?.errors) {
+            const errorList = error.response.data.errors;
+
+            errorList.forEach((err) => {
+            // If 'err' is a string, use it. If it's an object, grab its 'defaultMessage'
+            const message = typeof err === 'object' ? err.defaultMessage : err;
+            
+            toast.error(message || "Validation failed");
+            });
+        } else {
+            toast.error("An unexpected error occurred.");
+        }
         }
     };
 

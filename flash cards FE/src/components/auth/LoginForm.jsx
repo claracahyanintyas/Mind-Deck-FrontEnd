@@ -22,9 +22,24 @@ const LoginForm = () => {
             toast.success("Successfully logged in")
             navigate('/');
         } catch (error) {
-            const message = error.response?.data?.message || error.message || "Something went wrong"
-            toast.error(message);
-            setMessage('Invalid credentials');
+            let message = "Something went wrong";
+
+                if (error.response) {
+                    if (error.response.data?.error) {
+                        message = error.response.data.error;
+                    } 
+                    else if (error.response.status === 401) {
+                        message = "Invalid username or password.";
+                    }
+                    else if (error.response.data?.message) {
+                        message = error.response.data.message;
+                    }
+                } else {
+                    message = error.message;
+                }
+
+                toast.error(message);
+                setMessage('Invalid credentials');
         }
     };
 

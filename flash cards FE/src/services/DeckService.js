@@ -10,6 +10,10 @@ class DeckService{
 
     createDeck = (deck) => api.post(`${REST_API_BASE_URL}`, deck);
 
+    updateDeck = (id, deck) => api.put(`${REST_API_BASE_URL}/${id}`, deck);
+
+    addCardToDeck = (id, card) => api.post(`${REST_API_BASE_URL}/${id}/cards`, card)
+
 }
 
 export default new DeckService();

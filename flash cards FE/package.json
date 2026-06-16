@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
     "axios": "^1.16.0",
+    "lucide-react": "^1.18.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hot-toast": "^2.6.0",
@@ -26,6 +27,9 @@
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.5.0",
     "babel-plugin-react-compiler": "^1.0.0",
+    "chance": "^1.1.13",
+    "cypress": "^15.17.0",
+    "cypress-fill-command": "^1.0.2",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
