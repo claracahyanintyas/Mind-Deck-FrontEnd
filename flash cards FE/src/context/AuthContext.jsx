@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
     setLogoutHandler(logout);
   }, []);
 
-  const isAuthenticated = !!user;
+const isAuthenticated = !!user?.email;
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isAuthenticated, loading }}>
