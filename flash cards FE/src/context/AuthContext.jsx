@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AuthService from '../services/AuthService';
 import api, { setLogoutHandler } from '../Api';
+import toast from 'react-hot-toast';
 
 export const AuthContext = createContext();
 
@@ -15,27 +16,17 @@ export const AuthProvider = ({ children }) => {
         const response = await api.get('/users/me'); 
         setUser(response.data);
       } catch (error) {
-        // 2. Access token failed! Let's try to silently refresh the tokens
         console.log("Access token expired. Attempting silent token rotation...");
         try {
-          // Hit your backend refresh endpoint. 
-          // The browser automatically attaches the long-lived refresh cookie if it exists!
+          // 2. Try to silently rotate tokens if a refresh cookie exists
           await api.post('/auth/refresh'); 
           
-          // If refresh succeeds, we have a fresh access token cookie! Fetch the user profile now.
           const refreshedUserResponse = await api.get('/users/me');
           setUser(refreshedUserResponse.data);
         } catch (refreshError) {
-          // 3. Refresh token failed or doesn't exist (Brand new visitor!)
-          console.log("No valid refresh token found. Initializing brand new anonymous guest row...");
-          try {
-            await AuthService.guest();
-            const guestResponse = await api.get('/users/me');
-            setUser(guestResponse.data);
-          } catch (guestError) {
-            console.error("Critical failure establishing guest environment:", guestError);
-            setUser(null);
-          }
+          // 3. ABSOLUTE COLD START (No valid tokens at all for USER or GUEST)
+          console.log("No valid active session found. Leaving as unauthenticated visitor.");
+          setUser(null); 
         }
       } finally {
         setLoading(false);
@@ -72,13 +63,29 @@ export const AuthProvider = ({ children }) => {
     setLogoutHandler(logout);
   }, []);
 
-const isAuthenticated = !!user?.email;
+const isAuthenticated = !!user && user.email !== "" && !user.roles?.includes("ROLE_GUEST");
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, loading }}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+const loginAsGuest = async () => {
+  try {
+    setLoading(true);
+    await AuthService.guest(); // Calls your POST /guest endpoint
+    const guestResponse = await api.get('/users/me');
+    setUser(guestResponse.data);
+    return guestResponse.data;
+  } catch (error) {
+    console.error("Failed to initialize guest session:", error);
+    toast.error("Could not create guest session.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Make sure to expose it in your Provider value:
+return (
+  <AuthContext.Provider value={{ user, login, logout, loginAsGuest, isAuthenticated, loading }}>
+    {!loading && children}
+  </AuthContext.Provider>
+);
 };
 
 export default AuthProvider;

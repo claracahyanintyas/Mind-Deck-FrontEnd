@@ -28,6 +28,16 @@ const LoginForm = () => {
                     if (error.response.data?.error) {
                         message = error.response.data.error;
                     } 
+                    else if(error.response.data?.errors){
+                        const errorList = error.response.data.errors;
+
+                        errorList.forEach((err) => {
+                        // If 'err' is a string, use it. If it's an object, grab its 'defaultMessage'
+                        const message = typeof err === 'object' ? err.defaultMessage : err;
+                        
+                        toast.error(message || "Validation failed");
+                        });
+                    }
                     else if (error.response.status === 401) {
                         message = "Invalid username or password.";
                     }

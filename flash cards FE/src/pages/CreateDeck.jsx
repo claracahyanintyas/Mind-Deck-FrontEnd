@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react'
 import DeckService from '../services/DeckService';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 function CreateDeck() {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -9,12 +10,12 @@ function CreateDeck() {
     const { user, isAuthenticated } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
     if (!user){
         navigate('/login')
         return;
       }
-
+try{
         e.preventDefault(); 
 
         const newDeck = {
@@ -22,9 +23,27 @@ function CreateDeck() {
             description,
             isPrivate
         };
+        const response = await DeckService.createDeck(newDeck); 
+        toast.success("Success:", response.data);
+        
+        // 4. Navigate the user to their newly created deck
+        navigate(`/decks/${response.data.id}`);
+}
+catch(error){
+        if (error.response?.data?.errors) {
+            const errorList = error.response.data.errors;
 
-        DeckService.createDeck(newDeck);       
-        console.log(newDeck);
+            errorList.forEach((err) => {
+            // If 'err' is a string, use it. If it's an object, grab its 'defaultMessage'
+            const message = typeof err === 'object' ? err.defaultMessage : err;
+            
+            toast.error(message || "Validation failed");
+            });
+        } else {
+            toast.error("An unexpected error occurred.");
+        }
+}
+
     };
 
     
