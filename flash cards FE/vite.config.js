@@ -10,4 +10,8 @@ export default defineConfig({
     tailwindcss(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  define: {
+    // This explicitly tells Vite to replace any 'global' keyword with 'window' at compile-time
+    global: 'window',
+  },
 })

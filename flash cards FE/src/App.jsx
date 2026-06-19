@@ -1,3 +1,4 @@
+window.global ||= window;
 import { useState } from 'react'
 import './App.css'
 import HeaderComponent from './components/HeaderComponent'
@@ -10,6 +11,9 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import AuthProvider from './context/AuthContext'
 import { Toaster } from 'react-hot-toast';
+import ClassroomTest from './components/classroom/ClassroomTest'
+import ClassroomVote from './components/classroom/ClassroomVote';
+import ClassroomTeacher from './components/classroom/ClassroomTeacher';
 
 
 function App() {
@@ -32,6 +36,8 @@ function App() {
           <Route path='/login' element = {<LoginPage />}></Route>
           <Route path='/register' element = {<RegisterPage/>} ></Route>
           <Route path='/decks/:id' element = {<DeckPage />}></Route>
+          <Route path='/classroom' element = {<ClassroomVote/>}></Route>
+          <Route path='/classroom/teacher' element = {<ClassroomTeacher/>}></Route>
         </Routes>
       </AuthProvider>
       </BrowserRouter>

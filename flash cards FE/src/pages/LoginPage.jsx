@@ -12,7 +12,7 @@ function LoginPage() {
 
   const handleGuestClick = async () => {
     await loginAsGuest();
-    navigate('/decks');
+    navigate('/');
   };
 
   return (

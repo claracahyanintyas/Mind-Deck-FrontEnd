@@ -18,7 +18,7 @@ const HeaderComponent = () => {
               <img
                 src={logo}
                 alt="Site Logo"
-                className="h-18 w-auto nav-link rounded-full"
+                className="h-18 w-auto nav-link"
               />
             </Link>
             <Link className="hover:text-[#DFAEA1]" to='/'>Home</Link>
