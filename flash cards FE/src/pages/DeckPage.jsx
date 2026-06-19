@@ -8,6 +8,8 @@ import DeckService from '../services/DeckService';
 import { AuthContext } from '../context/AuthContext';
 import { useContext } from 'react';
 import CardService from '../services/CardService';
+/* Add this to your import blocks on DeckPage.jsx */
+import ClassroomTeacher from '../components/classroom/ClassroomTeacher'; 
 
 export default function DeckPage() {
   const { id } = useParams(); 
@@ -140,33 +142,42 @@ export default function DeckPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 p-6 md:p-12">
-      <div className="max-w-4xl mx-auto">
-        
-        {/* Navigation Action */}
-        <Link to="/decks" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 font-medium mb-6 transition">
-          <ArrowLeft size={16} /> Back to My Dashboard
-        </Link>
 
-        {/* Modular Child Components using real data states */}
-        <DeckHeader 
-          deck={deck} 
-          isCreator={isCreator} 
-          onSaveDeck={handleSaveDeckDetails} 
+
+// ... inside your return block in DeckPage() ...
+return (
+  <div className="min-h-screen bg-gray-50 text-gray-800 p-6 md:p-12">
+    <div className="max-w-4xl mx-auto space-y-6"> {/* Added spacing container */}
+      
+      {/* Navigation Action */}
+      <Link to="/decks" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 font-medium transition">
+        <ArrowLeft size={16} /> Back to My Dashboard
+      </Link>
+
+      <DeckHeader 
+        deck={deck} 
+        isCreator={isCreator} 
+        onSaveDeck={handleSaveDeckDetails} 
+      />
+
+      <FlashcardViewer cards={deck.cards} />
+
+      <ClassroomTeacher 
+  deckId={id} 
+  cards={deck.cards} 
+  isAuthenticated={isAuthenticated} 
+  user={user} 
+/>
+
+      {isCreator && (
+        <CardManager 
+          cards={deck.cards} 
+          onAddCard={handleAddCard}
+          onUpdateCard={handleUpdateCard}
+          onDeleteCard={handleDeleteCard}
         />
-
-        <FlashcardViewer cards={deck.cards} />
-
-        {isCreator && (
-          <CardManager 
-            cards={deck.cards} 
-            onAddCard={handleAddCard}
-            onUpdateCard={handleUpdateCard}
-            onDeleteCard={handleDeleteCard}
-          />
-        )}
-      </div>
+      )}
     </div>
-  );
+  </div>
+);
 }
