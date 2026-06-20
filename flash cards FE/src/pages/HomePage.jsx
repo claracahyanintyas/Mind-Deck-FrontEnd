@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react'; // 👈 Added useContext here
 import { useNavigate, Link } from 'react-router-dom';
 import { Users, LogIn, ShieldAlert } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
-export default function HomePage({ isAuthenticated, user }) {
+export default function HomePage() {
+  const { user } = useContext(AuthContext); // 🚀 Directly grab the real-time session payload
   const [roomCode, setRoomCode] = useState('');
   const navigate = useNavigate();
 
-  // Explicit active session indicator
-  const hasSession = isAuthenticated || user;
+  // 🎯 Clean, reliable session indicator matching your application parameters
+  const hasSession = !!user;
 
   const handleJoinRoom = (e) => {
     e.preventDefault();
@@ -16,13 +18,15 @@ export default function HomePage({ isAuthenticated, user }) {
       return;
     }
 
-    // 🔒 If they try to join without being logged in or continuing as a guest, intercept them
+    // 🔒 If no active User or Guest profile is detected, send them to login safely
     if (!hasSession) {
-      navigate(`/login?redirect=/classroom/vote?room=${roomCode.trim().toUpperCase()}`);
+      // 💡 NOTE: In your App.jsx, your route path is '/classroom', NOT '/classroom/vote'!
+      // Let's redirect them to '/classroom' so your router matches perfectly.
+      navigate(`/login?redirect=/classroom?room=${roomCode.trim().toUpperCase()}`);
       return;
     }
 
-    navigate(`/classroom/vote?room=${roomCode.trim().toUpperCase()}`);
+    navigate(`/classroom?room=${roomCode.trim().toUpperCase()}`);
   };
 
   return (
@@ -37,7 +41,7 @@ export default function HomePage({ isAuthenticated, user }) {
         </p>
       </div>
 
-      {/* 🔐 Authentication Status / Call-to-Action Info Banner */}
+      {/* 🔐 Authentication Status Info Banner */}
       {!hasSession && (
         <div className="w-full max-w-md bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5 flex gap-3 items-start shadow-sm animate-fade-in">
           <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -55,7 +59,7 @@ export default function HomePage({ isAuthenticated, user }) {
               </Link>
               <span className="text-amber-300 text-xs">|</span>
               <Link 
-                to="/login?guest=true" 
+                to="/login" 
                 className="text-xs font-bold text-amber-800 hover:text-amber-950 underline underline-offset-2"
               >
                 Go as Guest

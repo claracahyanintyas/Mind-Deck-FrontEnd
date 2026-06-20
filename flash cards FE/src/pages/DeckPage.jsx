@@ -2,18 +2,19 @@ import DeckHeader from '../components/decks/DeckHeader';
 import FlashcardViewer from '../components/decks/FlashcardViewer';
 import CardManager from '../components/cards/CardManager';
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom'; // 👈 Added useNavigate
+import { ArrowLeft, Loader2, AlertCircle, GraduationCap } from 'lucide-react'; // 👈 Added GraduationCap icon
 import DeckService from '../services/DeckService';
 import { AuthContext } from '../context/AuthContext';
 import { useContext } from 'react';
 import CardService from '../services/CardService';
-/* Add this to your import blocks on DeckPage.jsx */
 import ClassroomTeacher from '../components/classroom/ClassroomTeacher'; 
+import { ReviewService } from '../services/ReviewService'; // 👈 Imported ReviewService
 
 export default function DeckPage() {
   const { id } = useParams(); 
   const { user, isAuthenticated } = useContext(AuthContext);
+  const navigate = useNavigate(); // 👈 Initialized router hook
 
   // Core data states
   const [deck, setDeck] = useState(null);
@@ -28,14 +29,10 @@ export default function DeckPage() {
         setError(null);
         
         const response = (await DeckService.getDeck(id));
-        console.log(response);
         setDeck(response.data);
 
-
-      const isUser =
-        user?.username === response.data.createdBy?.username;
+        const isUser = user?.username === response.data.createdBy?.username;
         setIsCreator(isUser);
-        console.log(isUser)
 
       } catch (err) {
         setError(err.message);
@@ -45,30 +42,45 @@ export default function DeckPage() {
     }
 
     if (id) fetchDeckData();
-  }, [id]);
+  }, [id, user]);
 
-  // 2. PUT: UPDATE DECK DETAILS (Maps to DeckPublicData)
+const handleStartReview = async () => {
+  // 🛡️ Redirect to login if user isn't authenticated
+  if (!user) {
+    navigate('/login', { state: { from: `/review-setup/${id}` } });
+    return;
+  }
+
+  if (!deck?.cards || deck.cards.length === 0) {
+    alert("This collection doesn't have any flashcards to review yet!");
+    return;
+  }
+  
+  try {
+    const sessionData = await ReviewService.startSession(id);
+    navigate(`/review/${sessionData.id}`, {
+      state: { initialReviewData: sessionData }
+    });
+  } catch (err) {
+    alert("Failed to start review mode session. Make sure you are signed in.");
+  }
+};
+
   const handleSaveDeckDetails = async (updatedFields) => {
     try {
       const response = await DeckService.updateDeck(id, updatedFields);
-      
-      const updatedDeck = response.data;
-      setDeck(updatedDeck); // Sync local state with fresh server data
+      setDeck(response.data); 
     } catch (err) {
       alert(`Error saving deck: ${err.message}`);
     }
   };
 
-  // 3. POST: CREATE A NEW CARD (Maps to CardPublicData)
   const handleAddCard = async (newCardPayload) => {
     try {
       const response = await DeckService.addCardToDeck(id, newCardPayload);
-
-      const savedCard = response.data; // Backend returns full CardPublicData with generated Long id
-      
       setDeck(prev => ({
         ...prev,
-        cards: [...prev.cards, savedCard]
+        cards: [...prev.cards, response.data]
       }));
     } catch (err) {
       alert(`Error creating card: ${err.message}`);
@@ -76,37 +88,21 @@ export default function DeckPage() {
   };
 
   const handleUpdateCard = async (cardId, updatedFields) => {
-    console.log("Updating card", cardId, updatedFields);
-
     try {
-      const response = await CardService.updateCard(
-        cardId,
-        updatedFields
-      );
-
-      console.log("Response:", response);
-      console.log("Response data:", response.data);
-
-      const updatedCard = response.data;
-
+      const response = await CardService.updateCard(cardId, updatedFields);
       setDeck(prev => ({
         ...prev,
-        cards: prev.cards.map(card =>
-          card.id === cardId ? updatedCard : card
-        )
+        cards: prev.cards.map(card => card.id === cardId ? response.data : card)
       }));
     } catch (err) {
-      console.error(err);
       alert(`Error updating card: ${err.message}`);
     }
   };
-  // 5. DELETE: REMOVE A CARD
+
   const handleDeleteCard = async (cardId) => {
     if (!window.confirm("Are you sure you want to permanently delete this card?")) return;
-
     try {
-      const response = await CardService.deleteCard(cardId);
-
+      await CardService.deleteCard(cardId);
       setDeck(prev => ({
         ...prev,
         cards: prev.cards.filter(card => card.id !== cardId)
@@ -115,8 +111,6 @@ export default function DeckPage() {
       alert(`Error deleting card: ${err.message}`);
     }
   };
-
-  // --- RENDERING STATES ---
 
   if (loading) {
     return (
@@ -142,42 +136,61 @@ export default function DeckPage() {
     );
   }
 
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-800 p-6 md:p-12">
+      <div className="max-w-4xl mx-auto space-y-6"> 
+        
+        <Link to="/decks" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 font-medium transition">
+          <ArrowLeft size={16} /> Back to My Dashboard
+        </Link>
 
-
-// ... inside your return block in DeckPage() ...
-return (
-  <div className="min-h-screen bg-gray-50 text-gray-800 p-6 md:p-12">
-    <div className="max-w-4xl mx-auto space-y-6"> {/* Added spacing container */}
-      
-      {/* Navigation Action */}
-      <Link to="/decks" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 font-medium transition">
-        <ArrowLeft size={16} /> Back to My Dashboard
-      </Link>
-
-      <DeckHeader 
-        deck={deck} 
-        isCreator={isCreator} 
-        onSaveDeck={handleSaveDeckDetails} 
-      />
-
-      <FlashcardViewer cards={deck.cards} />
-
-      <ClassroomTeacher 
-  deckId={id} 
-  cards={deck.cards} 
-  isAuthenticated={isAuthenticated} 
-  user={user} 
-/>
-
-      {isCreator && (
-        <CardManager 
-          cards={deck.cards} 
-          onAddCard={handleAddCard}
-          onUpdateCard={handleUpdateCard}
-          onDeleteCard={handleDeleteCard}
+        <DeckHeader 
+          deck={deck} 
+          isCreator={isCreator} 
+          onSaveDeck={handleSaveDeckDetails} 
         />
-      )}
+
+        <FlashcardViewer cards={deck.cards} />
+
+        {/* 🛠️ Action Controls Block Grid containing Classroom Panel and Smart Review Engine Trigger */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ClassroomTeacher 
+            deckId={id} 
+            cards={deck.cards} 
+            isAuthenticated={isAuthenticated} 
+            user={user} 
+          />
+
+          {/* Spaced Repetition Launch Container Card */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+                <GraduationCap className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-bold text-lg text-gray-800">Spaced Repetition Review</h3>
+              </div>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Study alone using our backend buffer tracking priority index system to test your focus weaknesses optimally.
+              </p>
+            </div>
+            
+            <button
+              onClick={handleStartReview}
+              className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-xl shadow-sm transition active:scale-[0.99]"
+            >
+              🎯 Start Smart Review Session
+            </button>
+          </div>
+        </div>
+
+        {isCreator && (
+          <CardManager 
+            cards={deck.cards} 
+            onAddCard={handleAddCard}
+            onUpdateCard={handleUpdateCard}
+            onDeleteCard={handleDeleteCard}
+          />
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
 }

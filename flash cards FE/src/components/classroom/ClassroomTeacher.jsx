@@ -1,21 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react'; // 👈 Added useContext here
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import { ClassroomService } from '../../services/ClassroomService';
 import { Presentation, ChevronRight, AlertCircle, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext'; // 👈 Added AuthContext import
 
-export default function ClassroomTeacher({ deckId, cards = [], isAuthenticated, user }) {
+export default function ClassroomTeacher({ deckId, cards = [] }) { // 🛡️ Cleaned up unused props
+  const { user } = useContext(AuthContext); // 🚀 Safely pull the active user/guest state from the core engine context!
+
   const [roomCode, setRoomCode] = useState("");
   const [stompClient, setStompClient] = useState(null);
-  const [currentCardIndex, setCurrentCardIndex] = useState(-1); // 👈 Start at -1 (Lobby state)
+  const [currentCardIndex, setCurrentCardIndex] = useState(-1); 
   const [sessionData, setSessionData] = useState(null);
   const [showAuthRequired, setShowAuthRequired] = useState(false);
   
   const realCardIds = cards.map(card => card.id);
 
   const handleStartSession = async () => {
-    if (!isAuthenticated && !user) {
+    // Check if the current reader session profile is initialized
+    if (!user) {
       setShowAuthRequired(true);
       return;
     }
@@ -43,20 +47,16 @@ export default function ClassroomTeacher({ deckId, cards = [], isAuthenticated, 
           const parsedData = JSON.parse(message.body);
           setSessionData(parsedData);
           
-          // Sync index if backend signals a current card change later
           if (parsedData.currentCardId && currentCardIndex === -1) {
             setCurrentCardIndex(0);
           }
         });
-        
-        // ❌ REMOVED: No longer auto-publishing the first card immediately on connect!
       }
     });
     client.activate();
     setStompClient(client);
   };
 
-  // 🏁 Action to push the very first card once students have populated the lobby
   const startPresenting = () => {
     if (stompClient?.connected && realCardIds.length > 0) {
       setCurrentCardIndex(0);
@@ -109,7 +109,7 @@ export default function ClassroomTeacher({ deckId, cards = [], isAuthenticated, 
           <Link to="/login" className="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition text-sm">
             Sign In / Register
           </Link>
-          <Link to="/login?guest=true" className="bg-slate-100 text-slate-700 font-medium py-2 px-4 rounded-lg hover:bg-slate-200 transition text-sm">
+          <Link to="/login" className="bg-slate-100 text-slate-700 font-medium py-2 px-4 rounded-lg hover:bg-slate-200 transition text-sm">
             Continue as Guest
           </Link>
         </div>
@@ -133,13 +133,11 @@ export default function ClassroomTeacher({ deckId, cards = [], isAuthenticated, 
         </button>
       ) : (
         <div className="space-y-4">
-          {/* Room code display always stays visible at the top */}
           <div className="bg-indigo-50/70 p-4 rounded-xl text-center border border-indigo-100">
             <span className="text-xs uppercase font-bold text-indigo-500 tracking-wider">Join Room Code</span>
             <div className="text-3xl font-mono font-black text-indigo-900 tracking-widest">{roomCode}</div>
           </div>
 
-          {/* ⏳ LOBBY STATE: If we haven't started presenting the first card yet */}
           {currentCardIndex === -1 ? (
             <div className="space-y-4 pt-2">
               <div className="text-center p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
@@ -157,7 +155,6 @@ export default function ClassroomTeacher({ deckId, cards = [], isAuthenticated, 
               </button>
             </div>
           ) : (
-            /* 🃏 LIVE PRESENTATION STATE */
             <>
               <div className="bg-slate-50 rounded-xl p-4 text-sm space-y-2 text-gray-600 border border-slate-100">
                 <div className="flex justify-between">
