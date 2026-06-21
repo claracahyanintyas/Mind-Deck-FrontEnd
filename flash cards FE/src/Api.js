@@ -24,4 +24,10 @@ api.interceptors.response.use(
   }
 );
 
+export const getWebSocketUrl = (endpoint) => {
+  const rootUrl = API_BASE_URL.replace(/\/api$/, '');
+  
+  return `${rootUrl}${endpoint}`;
+};
+
 export default api;
