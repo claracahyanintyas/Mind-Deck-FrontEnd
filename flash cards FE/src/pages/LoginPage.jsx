@@ -37,6 +37,7 @@ function LoginPage() {
             <button 
               type="button"
               onClick={handleGuestClick}
+              data-cy="guestLogin"
               className="bg-[#895159] text-[#FFFCF5] p-2 w-full rounded-md font-medium transition-colors hover:bg-[#374375]"
             >
               Continue as Guest

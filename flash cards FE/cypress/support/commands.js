@@ -1,28 +1,3 @@
-// ***********************************************
-// This example commands.js shows you how to
-// create various custom commands and overwrite
-// existing commands.
-//
-// For more comprehensive examples of custom
-// commands please read more here:
-// https://on.cypress.io/custom-commands
-// ***********************************************
-//
-//
-// -- This is a parent command --
-// Cypress.Commands.add('login', (email, password) => { ... })
-//
-//
-// -- This is a child command --
-// Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
-//
-//
-// -- This is a dual command --
-// Cypress.Commands.add('dismiss', { prevSubject: 'optional'}, (subject, options) => { ... })
-//
-//
-// -- This will overwrite an existing command --
-// Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })>
 import 'cypress-fill-command'
 
 Cypress.Commands.add('register', (username, email, password) => {
@@ -35,23 +10,11 @@ Cypress.Commands.add('register', (username, email, password) => {
     cy.get('[data-cy=submit-form]').click()
     cy.url().should('include', '/login')
 })
-Cypress.Commands.add('login', (username, password) => {
+Cypress.Commands.add('loginAsGuest', () => {
     cy.visit('http://localhost:5173/login')
     cy.url().should('include', '/login')
-    cy.get('[data-cy="usernameOrEmail"]').type(username)
-    cy.get('[data-cy="password"]').type(password)
-    cy.get('[data-cy="submit-form"]').click()
-    cy.contains('logged in')
-})
-Cypress.Commands.add('createPayoutMethod', (type, providerName, accountName, accountNumber) => {
-    cy.visit('http://localhost:5173/payout-methods/create')
-    cy.url().should('include', '/payout-methods/create')
-    cy.get("select").select(type);
-    cy.get("input[name='providerName']").type(providerName);
-    cy.get("input[name='accountName']").type(accountName);
-    cy.get("input[name='accountNumber']").type(accountNumber);
-    cy.get("button[type='submit']").click();
-    cy.url().should('include', '/users')
+    cy.get('[data-cy="guestLogin"]').click()
+    cy.url().should('include', '/')
 })
 Cypress.Commands.add('logout', () => {
     cy.visit('http://localhost:5173/logout')
@@ -59,3 +22,31 @@ Cypress.Commands.add('logout', () => {
     cy.get('button[type="submit"]').click()
     cy.contains('Welcome')
 })
+// Command to add a brand new flashcard to a deck
+Cypress.Commands.add('addCard', (frontText, backText) => {
+    // If the form isn't open yet, toggle it open
+cy.get('[data-cy="add-card-toggle-button"]').click();
+
+    // Fill out and submit the card form
+    cy.get('[data-cy="new-card-front-input"]').type(frontText);
+    cy.get('[data-cy="new-card-back-input"]').type(backText);
+    cy.get('[data-cy="new-card-submit-button"]').click();
+
+    // Verify the card appears down in the list layout
+    cy.get('[data-cy="card-list"]').should('contain', frontText);
+});
+
+// Command to execute a complete active flashcard study review cycle
+Cypress.Commands.add('reviewCard', (expectedFront, expectedBack, selfGradeButtonSelector) => {
+    // 1. Verify you are seeing the right question upfront
+    cy.get('[data-cy="review-front-text"]').should('contain', expectedFront);
+    
+    // 2. Click to flip the card over to reveal the answer side
+    cy.get('[data-cy="flip-card-button"]').click();
+    
+    // 3. Verify the hidden back answers are now visible
+    cy.get('[data-cy="review-back-text"]').should('contain', expectedBack);
+    
+    // 4. Click your self-grade score button (e.g., '[data-cy="grade-easy-button"]')
+    cy.get(selfGradeButtonSelector).click();
+});
