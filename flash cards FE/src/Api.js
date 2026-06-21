@@ -8,7 +8,7 @@ const api = axios.create({
   withCredentials: true
 });
 
-let logoutHandler = () => {}; // Placeholder function
+let logoutHandler = () => {}; 
 
 export const setLogoutHandler = (handler) => {
   logoutHandler = handler; 
@@ -18,7 +18,7 @@ api.interceptors.response.use(
   (response) => response, 
   (error) => {
     if (error.response && error.response.status === 401) {
-      logoutHandler(); 
+      console.warn("Unauthorized API call detected. Passing error to application handler.");
     }
     return Promise.reject(error);
   }
