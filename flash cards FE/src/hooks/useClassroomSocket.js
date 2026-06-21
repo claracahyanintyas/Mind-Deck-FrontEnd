@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import { getWebSocketUrl } from '../Api'; 
 
 export function useClassroomSocket(roomCode) {
   const [sessionData, setSessionData] = useState({
@@ -17,7 +18,8 @@ export function useClassroomSocket(roomCode) {
   useEffect(() => {
     if (!roomCode) return;
 
-    const socket = new SockJS('http://localhost:8080/ws-classroom');
+    // Uses the central api.js utility to strip /api and suffix the WebSocket path
+    const socket = new SockJS(getWebSocketUrl('/ws-classroom'));
     const client = new Client({
       webSocketFactory: () => socket,
       onConnect: () => {
@@ -47,7 +49,12 @@ export function useClassroomSocket(roomCode) {
     client.activate();
     setStompClient(client);
 
-    return () => { if (client) client.deactivate(); };
+    return () => { 
+      if (client) {
+        console.log("Disconnecting WebSocket channel...");
+        client.deactivate(); 
+      }
+    };
   }, [roomCode]);
 
   const sendMessage = (destination, payload) => {

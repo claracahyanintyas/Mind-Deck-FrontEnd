@@ -1,24 +1,30 @@
-import React, { useEffect, useState, useContext } from 'react'; // 👈 Added useContext here
-import SockJS from 'sockjs-client';
-import { Client } from '@stomp/stompjs';
+import React, { useEffect, useState, useContext } from 'react';
 import { ClassroomService } from '../../services/ClassroomService';
+import { useClassroomSocket } from '../../hooks/useClassroomSocket'; 
 import { Presentation, ChevronRight, AlertCircle, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext'; // 👈 Added AuthContext import
+import { AuthContext } from '../../context/AuthContext';
 
-export default function ClassroomTeacher({ deckId, cards = [] }) { // 🛡️ Cleaned up unused props
-  const { user } = useContext(AuthContext); // 🚀 Safely pull the active user/guest state from the core engine context!
+export default function ClassroomTeacher({ deckId, cards = [] }) {
+  const { user } = useContext(AuthContext);
 
   const [roomCode, setRoomCode] = useState("");
-  const [stompClient, setStompClient] = useState(null);
-  const [currentCardIndex, setCurrentCardIndex] = useState(-1); 
-  const [sessionData, setSessionData] = useState(null);
+  const [currentCardIndex, setCurrentCardIndex] = useState(-1);
   const [showAuthRequired, setShowAuthRequired] = useState(false);
+  
+  // 🚀 Pass the reactive roomCode state into your centralized engine!
+  const { sessionData, isConnected, sendMessage } = useClassroomSocket(roomCode);
   
   const realCardIds = cards.map(card => card.id);
 
+  // Sync internal card timeline pointer with incoming websocket states
+  useEffect(() => {
+    if (sessionData?.currentCardId && currentCardIndex === -1) {
+      setCurrentCardIndex(0);
+    }
+  }, [sessionData, currentCardIndex]);
+
   const handleStartSession = async () => {
-    // Check if the current reader session profile is initialized
     if (!user) {
       setShowAuthRequired(true);
       return;
@@ -30,64 +36,31 @@ export default function ClassroomTeacher({ deckId, cards = [] }) { // 🛡️ Cl
     }
     try {
       const data = await ClassroomService.startSession(deckId); 
-      setRoomCode(data.roomCode);
-      setSessionData(data);
-      connectWebSocket(data.roomCode);
+      setRoomCode(data.roomCode); // Triggers the socket hook dynamically
     } catch (error) {
       alert("Could not start live session.");
     }
   };
 
-  const connectWebSocket = (code) => {
-    const socket = new SockJS('http://localhost:8080/ws-classroom');
-    const client = new Client({
-      webSocketFactory: () => socket,
-      onConnect: () => {
-        client.subscribe(`/topic/room/${code}`, (message) => {
-          const parsedData = JSON.parse(message.body);
-          setSessionData(parsedData);
-          
-          if (parsedData.currentCardId && currentCardIndex === -1) {
-            setCurrentCardIndex(0);
-          }
-        });
-      }
-    });
-    client.activate();
-    setStompClient(client);
-  };
-
   const startPresenting = () => {
-    if (stompClient?.connected && realCardIds.length > 0) {
+    if (isConnected && realCardIds.length > 0) {
       setCurrentCardIndex(0);
-      stompClient.publish({
-        destination: `/app/room/${roomCode}/next-card`,
-        body: JSON.stringify({ cardId: realCardIds[0] })
-      });
+      sendMessage(`/app/room/${roomCode}/next-card`, { cardId: realCardIds[0] });
     }
   };
 
   const flipCurrentCard = () => {
-    if (stompClient?.connected) {
-      stompClient.publish({
-        destination: `/app/room/${roomCode}/flip-card`
-      });
+    if (isConnected) {
+      sendMessage(`/app/room/${roomCode}/flip-card`, {});
     }
   };
 
-  useEffect(() => {
-    return () => { if (stompClient) stompClient.deactivate(); };
-  }, [stompClient]);
-
   const pushNextCard = () => {
-    if (stompClient?.connected) {
+    if (isConnected) {
       const nextIndex = currentCardIndex + 1;
       if (nextIndex < realCardIds.length) {
         setCurrentCardIndex(nextIndex);
-        stompClient.publish({
-          destination: `/app/room/${roomCode}/next-card`,
-          body: JSON.stringify({ cardId: realCardIds[nextIndex] })
-        });
+        sendMessage(`/app/room/${roomCode}/next-card`, { cardId: realCardIds[nextIndex] });
       } else {
         alert("End of deck reached!");
       }
@@ -95,7 +68,7 @@ export default function ClassroomTeacher({ deckId, cards = [] }) { // 🛡️ Cl
   };
 
   const totalVotesCast = sessionData?.totalVotesCast || 0;
-  const breakdown = sessionData?.currentVoteBreakdown || { FORGET: 0, UNSURE: 0, REMEMBER: 0 };
+  const breakdown = sessionData?.currentVoteTally || { FORGET: 0, UNSURE: 0, REMEMBER: 0 };
 
   if (showAuthRequired) {
     return (
